@@ -4,6 +4,9 @@ from ..models.schemas import MultiRequest
 from ..services.isochrone import compute_intersection_iterative
 from ..services.cafes import search_cafes_in_geometry
 
+from ..models.schemas import MultiRequestByAddress
+from ..services.geocode import geocode_many
+
 router = APIRouter(prefix="/cafes", tags=["cafes"])
 
 @router.post("/multi")
@@ -25,6 +28,31 @@ def cafes_multi(req: MultiRequest):
         raise HTTPException(
             status_code=404,
             detail={"message": "Не удалось найти общую область встречи для всех участников при допустимом времени.", "debug": debug},
+        )
+
+    return search_cafes_in_geometry(inter)
+
+@router.post("/multi-geocode")
+def cafes_multi_geocode(req: MultiRequestByAddress):
+    people = geocode_many(
+        req.addresses,
+        city_id=req.city_id,
+        location=req.location,
+    )
+
+    inter, debug = compute_intersection_iterative(
+        people=people,
+        start_minutes=20,
+        step_minutes=10,
+        tolerance_min=req.tolerance_min,
+        start_time_iso=req.start_time_iso,
+        detailing=req.detailing,
+    )
+
+    if inter is None or inter.is_empty:
+        raise HTTPException(
+            status_code=404,
+            detail={"message": "Не удалось найти общую область встречи для всех адресов при допустимом времени.", "debug": debug},
         )
 
     return search_cafes_in_geometry(inter)

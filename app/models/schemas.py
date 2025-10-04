@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from typing import List, Optional, Dict, Any
+from typing import List, Optional, Dict, Any, Tuple
 
 class Person(BaseModel):
     lat: float = Field(..., description="Широта")
@@ -21,3 +21,13 @@ class MultiRequest(BaseModel):
 class FeatureCollection(BaseModel):
     type: str = "FeatureCollection"
     features: List[Dict[str, Any]]
+
+class MultiRequestByAddress(BaseModel):
+    addresses: List[str] = Field(..., min_items=2, description="Список адресных строк (>=2)")
+    # Необязательные хинты для геокодера — повышают точность (см. оф. док)
+    city_id: Optional[str] = Field(None, description="Идентификатор города (часть id до подчёркивания из ответа /geocode)")
+    location: Optional[Tuple[float, float]] = Field(None, description="(lon, lat): точка для сортировки по distance")
+    # Параметры изохрон остаются теми же:
+    start_time_iso: Optional[str] = Field(None, description="RFC3339")
+    detailing: Optional[float] = Field(None, description="0..1")
+    tolerance_min: int = Field(5, ge=0, description="Допуск |Δt| (мин)")
