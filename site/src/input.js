@@ -2,7 +2,6 @@
 class DynamicForm {
   constructor() {
     this.inputContainer = document.getElementById('input-container');
-    this.formPreview = document.getElementById('form-preview');
     this.clearBtn = document.getElementById('clear-all');
     this.inputCount = 0;
 
@@ -92,13 +91,13 @@ class DynamicForm {
   }
 
   updatePreview() {
-    const formData = this.getFormData();
+    // const formData = this.getFormData();
 
-    if (Object.keys(formData).length === 0) {
-      this.formPreview.textContent = 'No data entered yet.';
-    } else {
-      this.formPreview.textContent = JSON.stringify(formData, null, 2);
-    }
+    // if (Object.keys(formData).length === 0) {
+    //   this.formPreview.textContent = 'No data entered yet.';
+    // } else {
+    //   this.formPreview.textContent = JSON.stringify(formData, null, 2);
+    // }
   }
 
   clearAllFields() {

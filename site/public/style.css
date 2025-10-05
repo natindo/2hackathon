@@ -101,16 +101,6 @@ body {
     margin-bottom: 15px;
 }
 
-#form-preview {
-    background: white;
-    padding: 15px;
-    border-radius: 4px;
-    border: 1px solid #dee2e6;
-    min-height: 100px;
-    font-family: monospace;
-    white-space: pre-wrap;
-}
-
 .clear-btn {
     background-color: #5a8741;
     color: white;
