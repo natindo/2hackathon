@@ -1,0 +1,256 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: Arial, sans-serif;
+    line-height: 1.6;
+    color: #333;
+    height: 100vh;
+}
+
+.container {
+    display: flex;
+    height: 100vh;
+}
+
+.fixed-column {
+    width: 400px;
+    background-color: #f8f9fa;
+    padding: 20px;
+    border-right: 2px solid #dee2e6;
+    overflow-y: auto;
+}
+
+.fixed-column h2 {
+    color: #2c3e50;
+    margin-bottom: 10px;
+}
+
+.fixed-column p {
+    color: #6c757d;
+    margin-bottom: 20px;
+    font-size: 0.9em;
+}
+
+.input-group {
+    margin-bottom: 15px;
+    padding: 15px;
+    background: white;
+    border-radius: 8px;
+    border: 1px solid #e9ecef;
+    transition: all 0.3s ease;
+}
+
+.input-group:focus-within {
+    border-color: #007bff;
+    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+}
+
+.input-group label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+    color: #495057;
+    font-size: 0.9em;
+}
+
+.input-group input {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    font-size: 14px;
+    transition: border-color 0.3s;
+}
+
+.input-group input:focus {
+    outline: none;
+    border-color: #007bff;
+    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+}
+
+.input-group input:not(:placeholder-shown) {
+    background-color: #f8f9fa;
+}
+
+.flexible-column {
+    flex: 1;
+    padding: 20px;
+    background-color: #fff;
+    overflow-y: auto;
+}
+
+.flexible-column h2 {
+    color: #2c3e50;
+    margin-bottom: 15px;
+}
+
+.content-box {
+    background-color: #e8f4f8;
+    padding: 20px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    border-left: 4px solid #3498db;
+}
+
+.content-box h3 {
+    color: #2980b9;
+    margin-bottom: 15px;
+}
+
+#form-preview {
+    background: white;
+    padding: 15px;
+    border-radius: 4px;
+    border: 1px solid #dee2e6;
+    min-height: 100px;
+    font-family: monospace;
+    white-space: pre-wrap;
+}
+
+.clear-btn {
+    background-color: #5a8741;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background-color 0.3s;
+}
+.find-btn {
+    background-color: #5a8741;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background-color 0.3s;
+}
+
+.find-btn:hover {
+    background-color: #416a2a;
+}
+.clear-btn:hover {
+    background-color: #416a2a;
+}
+
+/* Animation for new inputs */
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.new-input {
+    animation: slideIn 0.3s ease-out;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+    .container {
+        flex-direction: column;
+    }
+
+    .fixed-column {
+        width: 100%;
+        height: auto;
+        border-right: none;
+        border-bottom: 2px solid #ddd;
+    }
+}
+.map {
+    width: 100%;
+    height: 100%;
+}
+
+.go {
+    background-color: #85f83e;
+    color: #ffffff;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    text-shadow: #509c22 1px 1px 1px;
+    transition: background-color 0.3s;
+}
+
+.placeCard {
+    background: white;
+    padding: 15px;
+    border-radius: 4px;
+    border: 1px solid #dee2e6;
+    min-height: 100px;
+    font-family: monospace;
+    white-space: pre-wrap;
+}
+
+.h3 {
+    font-size: 16px;
+}
+
+.h4 {
+    font-size: 14px;
+}
+
+.submit {
+    background: white;
+    padding: 15px;
+    border-radius: 4px;
+    border: 1px solid #dee2e6;
+    min-height: 100px;
+    font-family: monospace;
+    white-space: pre-wrap;
+}
+
+.popup {
+max-width: 260px;
+background: #fff;
+border: 1px solid #e1e4e8;
+border-radius: 8px;
+box-shadow: 0 6px 18px rgba(0,0,0,.18);
+padding: 10px 12px;
+font: 13px/1.4 -apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Arial;
+pointer-events: auto; /* чтобы клики внутри работали */
+}
+.popup__title { font-weight: 600; margin: 0 0 4px; }
+.popup__meta  { color:#555; margin: 4px 0 0; }
+.popup__link  { word-break: break-all; }
+.popup__close {
+position:absolute; right:8px; top:6px; cursor:pointer;
+font-size:16px; line-height:1; color:#888;
+}
+.popup-wrap { position: relative; transform: translateY(-8px); } /* чуть приподнять */
+
+.marker-card {
+  position: relative;
+  background: white;
+  border: 1px solid #ccc;
+  border-radius: 10px;
+  box-shadow: 0 2px 10px rgba(0,0,0,.25);
+  padding: 10px 12px;
+  max-width: 240px;
+  transform: translateY(-12px); /* чуть выше маркера */
+  pointer-events: auto;
+}
+.marker-card__title {
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+.marker-card__close {
+  position: absolute;
+  top: 4px;
+  right: 8px;
+  cursor: pointer;
+  color: #888;
+}

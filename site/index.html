@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://unpkg.com/react@16/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@16/umd/react-dom.development.js"></script>
+    <script src="https://mapgl.2gis.com/api/js/v1"></script>
+        <!-- Don't use this in production: -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <title>Places Finder</title>
+    <link rel="stylesheet" href="public/style.css">
+        <style>
+            html,
+            body,
+            #container {
+                margin: 0;
+                width: 100%;
+                height: 100%;
+                overflow: hidden;
+            }
+        </style>
+</head>
+
+<body>
+<div class="container">
+  <div class="fixed-column">
+    <h3>Добавьте ваших друзей</h3>
+
+    <form id="dynamic-form">
+      <div class="input-container" id="input-container">
+        <!-- Поля добавляются динамически -->
+      </div>
+
+      <!-- превью данных формы (на него ссылается JS) -->
+      <pre id="form-preview" style="background:#f6f8fa;border:1px solid #e1e4e8;border-radius:6px;padding:8px;min-height:60px;white-space:pre-wrap;"></pre>
+    </form>
+
+    <button id="clear-all" class="clear-btn" type="button" style="margin-top:8px;">
+      <h3>Очистить</h3>
+    </button>
+
+    <button id="find-btn" class="find-btn" type="button" style="margin-top:8px;">
+      <h3>Найти</h3>
+    </button>
+  </div>
+
+  <div class="flexible-column">
+    <div id="container"></div>
+
+    <!-- Инициализация карты -->
+    <script>
+      const map = new mapgl.Map('container', {
+        center: [37.6177, 55.7562],
+        zoom: 13,
+        key: '99d980c9-eb1a-43b5-8738-ba966b37481f',
+      });
+
+      // --- Обратное геокодирование через Nominatim (можно заменить на 2GIS Catalog API) ---
+      async function reverseGeocode(lat, lon) {
+        const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lon}&zoom=18&addressdetails=1&accept-language=ru`;
+        const res = await fetch(url, {
+          headers: {
+            // Заголовок User-Agent обязателен на сервере; в браузере может быть проигнорирован.
+          }
+        });
+        if (!res.ok) {
+          return `${lat.toFixed(6)}, ${lon.toFixed(6)}`;
+        }
+        const data = await res.json();
+        return data.display_name || `${lat.toFixed(6)}, ${lon.toFixed(6)}`;
+      }
+
+      // На клик по карте: получаем адрес и подставляем в форму
+      map.on('click', async (evt) => {
+        try {
+          const [lon, lat] = evt.lngLat;
+          const address = await reverseGeocode(lat, lon);
+
+          // Берем экземпляр динамической формы
+          const df = window.dynamicForm;
+          if (!df) return;
+
+          // ищем первый пустой инпут
+          let inputs = df.getAllInputs();
+          let target = inputs.find(i => i.value.trim() === '');
+
+          // если пустых нет — создаём новое поле и берем его
+          if (!target) {
+            const newId = df.addInputField();
+            target = document.getElementById(newId);
+          }
+
+          // записываем адрес и обновляем превью
+          if (target) {
+            target.value = address;
+            df.updatePreview();
+            target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }
+        } catch (e) {
+          console.error('Reverse geocode error:', e);
+        }
+      });
+
+    </script>
+
+<script>
+// ====== Хранилище маркеров/попапов ======
+const state = {
+  markers: [],
+  popups: []
+};
+
+// Контейнер карты
+const mapContainer = document.getElementById('container');
+
+// Очистка старых объектов
+function clearMapObjects() {
+  state.markers.forEach(m => { try { m.destroy(); } catch(e){} });   // <-- было remove()
+  state.popups.forEach(p => { try { p.destroy(); } catch(e){} });    // <-- было remove()
+  state.markers = [];
+  state.popups = [];
+}
+
+// Безопасное форматирование адреса
+function formatAddress(props) {
+  if (!props || !props.address) return '';
+  const a = props.address;
+  const parts = [];
+  if (a.building_name) parts.push(a.building_name);
+  if (a.landmark_name) parts.push(a.landmark_name);
+  if (Array.isArray(a.components)) {
+    const street = a.components.find(c => c.type === 'street_number');
+    if (street) parts.push(`${street.street} ${street.number}`);
+  }
+  if (a.postcode) parts.push(a.postcode);
+  return parts.filter(Boolean).join(', ');
+}
+
+// Отрисовка маркеров
+function renderMarkers(features) {
+  clearMapObjects();
+  if (!Array.isArray(features) || features.length === 0) return;
+
+  let sx = 0, sy = 0;
+
+  for (const f of features) {
+    const coords = f?.geometry?.coordinates;
+    if (!Array.isArray(coords) || coords.length < 2) continue;
+    const [lon, lat] = coords;
+    const props = f.properties || {};
+
+    // маркер
+    const marker = new mapgl.Marker(map, { coordinates: [lon, lat] });
+    state.markers.push(marker);
+
+    // клик по маркеру -> показать карточку
+    marker.on('click', () => {
+      // убрать предыдущие карточки
+      state.popups.forEach(p => { try { p.destroy(); } catch(e){} }); // <-- было remove()
+      state.popups = [];
+
+      // карточка
+      const card = document.createElement('div');
+      card.className = 'marker-card';
+      // легкая «якорная» коррекция: центр по X и над точкой по Y
+      card.style.transform = 'translate(-50%, -100%)';
+      card.innerHTML = `
+        <div class="marker-card__close">×</div>
+        <div class="marker-card__title">${props.name || 'Без названия'}</div>
+        ${props.address ? `<div><strong>Адрес:</strong> ${formatAddress(props)}</div>` : ''}
+        ${Array.isArray(props.rubrics) ? `<div><strong>Рубрики:</strong> ${props.rubrics.join(', ')}</div>` : ''}
+      `;
+
+      // HtmlMarker, привязываем к координате
+      const infoMarker = new mapgl.HtmlMarker(map, {
+        coordinates: [lon, lat],
+        html: card,
+        // anchor в HtmlMarker — это массив пикселей; можно не задавать и использовать transform выше
+        zIndex: 999
+      });
+
+      // закрытие по «крестику»
+      card.querySelector('.marker-card__close').addEventListener('click', () => {
+        try { infoMarker.destroy(); } catch(e){} // <-- было remove()
+      });
+
+      state.popups.push(infoMarker);
+    });
+
+    sx += lon;
+    sy += lat;
+  }
+
+  // центрируем карту
+  const cx = sx / features.length;
+  const cy = sy / features.length;
+  try {
+    map.flyTo({ center: [cx, cy], zoom: 14 });
+  } catch {
+    map.setCenter([cx, cy]);
+    map.setZoom(14);
+  }
+}
+// Вспомогательная функция форматирования адреса
+function formatAddress(props) {
+  const a = props.address;
+  if (!a) return '';
+  const parts = [];
+  if (a.building_name) parts.push(a.building_name);
+  if (a.landmark_name) parts.push(a.landmark_name);
+  if (Array.isArray(a.components)) {
+    const street = a.components.find(c => c.type === 'street_number');
+    if (street) parts.push(`${street.street} ${street.number}`);
+  }
+  if (a.postcode) parts.push(a.postcode);
+  return parts.filter(Boolean).join(', ');
+}
+
+// создаём HTML-карточку с информацией
+function showInfoCard(props, lon, lat) {
+  const name = props.name || 'Без названия';
+  const rubrics = Array.isArray(props.rubrics) ? props.rubrics.join(', ') : '';
+  const addr = props.address ? JSON.stringify(props.address).replace(/[{}"]/g, '') : '';
+
+  // убираем предыдущую карточку, если есть
+  const existing = document.querySelector('.marker-info');
+  if (existing) existing.remove();
+
+  // создаём контейнер
+  const card = document.createElement('div');
+  card.className = 'marker-info';
+  card.innerHTML = `
+    <div class="marker-info__close">×</div>
+    <div class="marker-info__title">${name}</div>
+    <div><strong>Адрес:</strong> ${addr}</div>
+    <div><strong>Рубрики:</strong> ${rubrics}</div>
+  `;
+  document.body.appendChild(card);
+
+  // позиционируем карточку рядом с точкой клика
+const rect = mapContainer.getBoundingClientRect();
+const pt = map.project([lon, lat]);
+// координаты страницы:
+
+const pageX = rect.left + window.scrollX + pt.x;
+const pageY = rect.top  + window.scrollY + pt.y;
+card.style.left = `${pageX - card.offsetWidth/2}px`;
+card.style.top  = `${pageY - card.offsetHeight - 10}px`;
+
+
+  // закрытие
+  card.querySelector('.marker-info__close').addEventListener('click', () => card.remove());
+}
+
+// Собрать адреса из формы
+function collectAddressesFromForm() {
+  const df = window.dynamicForm;
+  if (!df) return [];
+  return df.getAllInputs()
+           .map(i => i.value.trim())
+           .filter(v => v.length > 0);
+}
+
+//обработчик очистить
+
+document.getElementById('clear-all').addEventListener('click', () => {
+  clearMapObjects(); // <-- эта функция уже есть и уничтожает все маркеры и попапы
+});
+
+// Обработчик кнопки "Найти"
+document.getElementById('find-btn').addEventListener('click', async () => {
+  const addresses = collectAddressesFromForm();
+  if (addresses.length === 0) {
+    alert('Добавьте хотя бы один адрес в форму.');
+    return;
+  }
+
+  try {
+    const resp = await fetch('http://localhost:8000/cafes/multi-geocode', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ addresses })
+    });
+
+    if (!resp.ok) {
+      const t = await resp.text();
+      throw new Error(`HTTP ${resp.status}: ${t}`);
+    }
+
+    const data = await resp.json();
+    if (data && data.type === 'FeatureCollection' && Array.isArray(data.features)) {
+      renderMarkers(data.features);
+    } else {
+      throw new Error('Некорректный формат ответа бэкенда: ожидается FeatureCollection с массивом features');
+    }
+  } catch (e) {
+    console.error(e);
+    alert('Ошибка при поиске: ' + e.message);
+  }
+});
+</script>
+
+
+  </div>
+</div>
+
+<!-- ВАЖНО: правильный путь к вашему файлу с классом DynamicForm -->
+<script src="src/input.js"></script>
+</body>
+
+
+</html>
